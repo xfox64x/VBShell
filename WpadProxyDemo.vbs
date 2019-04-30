@@ -5,6 +5,8 @@
 ComputerDomain = ""
 Set xHttp = CreateObject("MSXML2.ServerXMLHTTP.6.0")
 xHttp.setOption 2, SXH_SERVER_CERT_IGNORE_ALL_SERVER_ERRORS
+
+' This method actually checks if the host is part of a domain, though it is long:
 Set objWMISvc = GetObject( "winmgmts:\\.\root\cimv2" )
 Set colItems = objWMISvc.ExecQuery( "Select * from Win32_ComputerSystem" )
 For Each objItem in colItems
@@ -12,6 +14,11 @@ For Each objItem in colItems
         ComputerDomain = objItem.Domain
     End If
 Next
+
+' This is a much shorter way to get the information, though it may be inaccurate:
+'Set sysInfo = CreateObject("ADSystemInfo")
+'ComputerDomain = sysInfo.DomainDNSName
+        
 If Len(ComputerDomain) > 0 Then
     xHttp.Open "GET", "https://wpad." & ComputerDomain & "/wpad.dat", False
     xHttp.send
