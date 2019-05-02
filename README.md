@@ -23,6 +23,7 @@ A reverse VBS C2 client/server I tried to minimize for use with Ducky/Jackit and
   * Install the VbsClient as a scheduled task (not fully functional):
     * INSTALL
 * WpadProxyDemo (VBS) - Demonstrates how to resolve a proxy from the WPAD server (for getting out through proxies).
+* SecondStageTest.htm (VBS) - Used to test stage-one getting through a proxy, with SSL, to https://raw.githubusercontent.com/xfox64x/VBShell/master/SecondStageTest.htm
 
 Start the python multi-threaded VbsServer and let the client script rip. Based on a number of other VBS shells out there.
 
