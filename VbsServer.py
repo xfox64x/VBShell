@@ -64,11 +64,6 @@ UriPathRe = re.compile("(POST|GET) (?P<path>.+?) (HTTP/1\.1)")
 
 TaskingRe = re.compile(r"(?P<Key>[a-zA-Z0-9_]+)\s*=\s*(((?P<quote>['\"])(?P<QuotedStringValue>.*?)(?<!\\)(?P=quote))|(?P<IntegerValue>\d+(\.\d+)?)|(?P<UnQuotedStringValue>[^\s]+))")
 
-# List of Commands to run once the client vbscript calls back.
-#InitialTasking = ["CMD ipconfig", "CMD wmic csproduct get UUID", "CMD wmic DISKDRIVE get SerialNumber", "CMD whoami", "CMD whoami /priv", "CMD whoami /groups"]#
-InitialTasking = ["CMD CMD=ipconfig"]
-
-
 TopPaths = []
 TopExtensions = []
 with open("dirbuster-top1000.txt", "r") as f:
