@@ -20,6 +20,8 @@ A reverse VBS C2 client/server I tried to minimize for use with Ducky/Jackit and
     * WRITEFILE FILEPATH:\<unquoted_file_path\> FILECONTENT:\<text_to_write\>
   * Execute commands in cmd (pops a cmd window users can see): 
     * CMD \<windows_commands\>
+  * Siliently execute commands (without standard out/error return values): 
+    * SILENTCMD \<windows_commands\>
   * Install the VbsClient as a scheduled task (not fully functional):
     * INSTALL
 * WpadProxyDemo (VBS) - Demonstrates how to resolve a proxy from the WPAD server (for getting out through proxies).
@@ -43,5 +45,11 @@ The plan behind all of this is that I'm going to:
 
 Of course, I have permission to do all of this during my red-team engagements, so don't be goin around doin anything *illegal*, you hear?
 
+## Recent Changes
+* SSL w/ self-signed certs is now supported.
+* Automated tasking is a thing, though undocumented.
+* Stages are now templates with dynamic values and are automatically deployed/generated.
+* Request paths have been randomized and sveral checks were added to make blue-team analysis more difficult.
+
 ## TODO
-Still need to convert all conntections to HTTPS. INSTALL isn't really functional, right now. Creating effective tasking, automating the public share creation, and linking the Jackit on the local PI with the VbsServer on the AWS instance will probably net great increases in speed and effectiveness - put Jackit on auto-pwn and do the superquick wscript execution from a public share. Writing binary files to the client host isn't supported. The different stages and URI paths could probably be obfuscated and customized per each attempted Jackit compromise.
+INSTALL isn't really functional, right now. Creating effective tasking, automating the public share creation, and linking the Jackit on the local PI with the VbsServer on the AWS instance will probably net great increases in speed and effectiveness - put Jackit on auto-pwn and do the superquick wscript execution from a public share. Writing binary files to the client host isn't supported. The different stages and URI paths could probably be obfuscated and customized per each attempted Jackit compromise.
