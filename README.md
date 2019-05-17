@@ -51,6 +51,8 @@ The stock Crazyradio PA can't penetrate the target building's exterior - I haven
 
 The way I design, write, and code these projects is terrible. My second-stage client enables global, dynamic execution, and instead of concentrating on dynamically modifying the global environment, by changing variables and adding functions through this idea of "tasking", I put a ton of time into parsing text on the client's side. You would think that I would know by now that the best solutions require the least static concepts, but I'm dumb. Changes to follow.
 
+Security products suck. Symantec ate my VBS lunch; Crowdstrike couldn't care less. I originally thought Symantec was doing some runtime dynamic analysis on the calls I was making or how things were done. The first-stage flagged as ISB.Downloader!gen40, when written to disk. Cool. Tried calling the first-stage from a share, I saw it callback and pick up the second-stage, but then Symantec killed it with fire. The download-and-execute logic must be too aparent. One answer was an overly complicated PowerShell one-liner, calling Invoke-WebRequest, after applying both certificate and header fixes, to download the first-stage VBS and then execute it on command line; it is a massive payload to type (and sit through). I thought Symantec might even be catching the same logic in the second-stage payload, somehow. Having success with this PS payload made me question all of this, so I added a bit of the second to the first, adding a bullshit regex that captures all of the text and calling Execute on the resulting submatches. This was, apparently, enough.
+
 ## Recent Changes
 * SSL w/ self-signed certs is now supported.
 * Automated tasking is a thing, though undocumented.
