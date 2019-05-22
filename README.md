@@ -1,18 +1,18 @@
 # VBShell
-Reverse VBS C2
+Mousejack attack and reverse VBS C2 script.
 
 ## Summary
-A reverse VBS C2 client/server I tried to minimize for use with Ducky/Jackit and other limited enagements. Things have changed significantly: 
-* VbsServer (Python 3) - Listens for the client callbacks, handles staging, and tracks client tasking.
-* VbsClientStage1 (VBS) - Does initial callback and executes whatever VBS its handed (usually the second-stage).
-* VbsClientStage2 (VBS) - The second-stage, with more advanced capabilities:
-  * Commands are now BYO via dynamic global execution. Define functions and set variables in separate VBScripts, add their paths to the global tasking files, and watch execution happen.
-* WpadProxyDemo (VBS) - Demonstrates how to resolve a proxy from the WPAD server (for getting out through proxies).
+I smashed a keystroke-injection-attack script and reverse VBS C2 client/server together for use during limited on-site enagements. The overall goal was to leverage the Mousejack attack to gain an initial foothold, with minimal attacker interaction, bypassing both CrowdStrike's and Symantec Endpoint Protection's detection capabilities.
 
-Start the python multi-threaded VbsServer and let the client script rip. Based on a number of other VBS shells out there.
+## Requirements
+Python 3.6+ is required because the updated/fixed SSL functionality is required. Here's a guide by @SeppPenner on building and installing Python 3.7.0 on Raspbian: https://gist.github.com/SeppPenner/6a5a30ebc8f79936fa136c524417761d
+
+If you are considering using their install script, I recommend removing the lines that delete the python source/zip (lines 10-11) and uninstall the dependencies (line 12-14) until you are completely sure the build and install went OK. You will also probably need build-essential some times in the future, so maybe don't run those last lines...
+
+A CrazyRadio dongle with the custom Mousejack firmware is also required: https://github.com/BastilleResearch/mousejack
 
 ## The Plan
-The plan behind all of this is that I'm going to:
+My plan was to:
 1. Set up my yagi antenna and Jackit-CrazyRadio-Pi unit in the backseat of my car.
 2. Drive up into the engagement's scenic roundabout entrance.
 3. Point the antenna at some unsuspecting fools.
@@ -35,11 +35,8 @@ The way I design, write, and code these projects is terrible. My second-stage cl
 
 Security products suck. Symantec ate my VBS lunch; Crowdstrike couldn't care less. I originally thought Symantec was doing some runtime dynamic analysis on the calls I was making or how things were done. The first-stage flagged as ISB.Downloader!gen40, when written to disk. Cool. Tried calling the first-stage from a share, I saw it callback and pick up the second-stage, but then Symantec killed it with fire. The download-and-execute logic must be too aparent. Obfuscation did nothing. One answer was an overly complicated PowerShell one-liner, calling Invoke-WebRequest, after applying both certificate and header fixes, to download the first-stage VBS and then execute it on command line; it is a massive payload to type (and sit through). I thought Symantec might even be catching the same logic in the second-stage payload, somehow. Having success with this PS payload made me question all of this, so I added a bit of the second to the first, adding a bullshit regex that captures all of the text and calling Execute on the first resulting submatch. This was, apparently, enough. If one can fix the SSL and header issues between PowerShell and the Python server, one could create a smaller, proxy-aware payload that would be far more effective.
 
-## Recent Changes
-* SSL w/ self-signed certs is now supported.
-* Automated tasking is a thing, though undocumented.
-* Stages are now templates with dynamic values and are automatically deployed/generated.
-* Request paths have been randomized and sveral checks were added to make blue-team analysis more difficult.
+The humans are very aware. In a recent test, only 3 out of ~25 were successfully pwnt, where the second-stage payloads successfully executed tasking (profiling the user and host). In order for a keystroke-injection-attack to be successful, the users need to be actively NOT using their machines, or else they will most likely click out of the command prompt being written to or add additional keystrokes to the carefully formatted payloads. This was the number one reason why these attacks failed, based on visual surveillance. The second most likely reason for failure is locked screens. In these cases, the duck payloads actually resulted in numerous AD account lockouts because the keystrokes end up in the password feild and the enter button is pressed numerous times. Beyond that, almost every one of those ~25 people complained about a strange command prompt popup and one even gave me the finger. The 3 successes took place between a trio of people talking to each other, instead of working on their computers. Injection takes too long, though I guess I only need one successful deployment to then create an internal network share I can put more first-stage VBS payloads. The attack would then be as quick as typing the path to the remotely shared resource in the run prompt.
+
 
 ## TODO
-INSTALL isn't really functional, right now. Creating effective tasking, automating the public share creation, and linking the Jackit on the local PI with the VbsServer on the AWS instance will probably net great increases in speed and effectiveness - put Jackit on auto-pwn and do the superquick wscript execution from a public share. Writing binary files to the client host isn't supported. The different stages and URI paths could probably be obfuscated and customized per each attempted Jackit compromise.
+Add logic and tasking to create an internal share, upload first-stage payloads to said share, and inject attacks that execute the shared payloads (would be much faster and less noticeable).
