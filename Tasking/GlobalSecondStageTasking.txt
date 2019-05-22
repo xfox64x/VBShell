@@ -1,0 +1,3 @@
+./tasking/InitialCleaning.vbs
+./tasking/GetSystemInfo.vbs
+./tasking/Terminate.vbs
