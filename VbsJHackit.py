@@ -26,8 +26,8 @@ ClientUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
 FirstStagePayload = "VbsClientStage1.duck"
 SecondStagePayload = "VbsClientStage2_dynamic.vbs"
 
-GlobalSecondStageTaskingPath = "./tasking/GlobalSecondStageTasking.txt"
-GlobalThirdStageTaskingPath = "./tasking/GlobalThirdStageTasking.txt"
+GlobalSecondStageTaskingPath = "./Tasking/GlobalSecondStageTasking.txt"
+GlobalThirdStageTaskingPath = "./Tasking/GlobalThirdStageTasking.txt"
 
 UUID_Replace_String = "<client_uuid_00000000-0000-0000-0000-000000000000>"
 ServerName_Replace_String = "<server_host_name_example.com>"
