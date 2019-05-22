@@ -4,6 +4,8 @@ Mousejack attack and reverse VBS C2 script.
 ## Summary
 I smashed a keystroke-injection-attack script and reverse VBS C2 client/server together for use during limited on-site enagements. The overall goal was to leverage the Mousejack attack to gain an initial foothold, with minimal attacker interaction, bypassing both CrowdStrike's and Symantec Endpoint Protection's detection capabilities.
 
+For some odd reason, this was sort of based on [jackit](https://github.com/insecurityofthings/jackit), which uses the findings of [Bastille's Mousejack](https://github.com/BastilleResearch/mousejack) research.
+
 ## Requirements
 Python 3.6+ is required because the updated/fixed SSL functionality is required. Here's a guide by @SeppPenner on building and installing Python 3.7.0 on Raspbian: https://gist.github.com/SeppPenner/6a5a30ebc8f79936fa136c524417761d
 
