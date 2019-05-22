@@ -40,8 +40,8 @@ ssl_cert_path = "certfile.crt"
 # A unique User-Agent used as a test for against forensic probing
 client_user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.1O2 Safari/537.36"
 
-first_stage_payload_path = "VbsClientStage1.duck"
-second_stage_payload_path = "VbsClientStage2_dynamic.vbs"
+first_stage_payload_path = "./Payloads/Stage1_SymantecBypass.duck"
+second_stage_payload_path = "./Payloads/Stage2.vbs"
 
 global_second_stage_tasking_path = "./Tasking/GlobalSecondStageTasking.txt"
 global_third_stage_tasking_path = "./Tasking/GlobalThirdStageTasking.txt"
