@@ -11,8 +11,6 @@
 '
 ' Here is an excellent resource of useful things you could probably inject:
 '    https://www.robvanderwoude.com/vbstech.php
-'
-' Oh, I do not know if this works yet, so use at own risk.
 
 ' Uncomment below to skip breaking on errors - done for debugging; should be uncommented.
 'On Error Resume Next
